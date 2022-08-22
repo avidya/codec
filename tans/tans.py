@@ -3,7 +3,6 @@
 # author: kozz
 
 import math
-
 print("Simple implementation of tANS.")
 print("tANS is a table based ANS(asymmetic numeral systems) encoding algorithm.")
 print("It's said ANS performs much better than the classic Huffman encoding in data compression, and it will be the replacement in future.")
@@ -13,8 +12,9 @@ class TANS:
     count = 0
     maxVal = 0
     collisionSet = set()
-    lookupTable = []
-    def encode(self, filepath, out, magicExtraBits = 5):
+    lookup = []
+
+    def encode(self, filepath, out='/tmp/tans.out', magicExtraBits=3):
         p = {}
         with open(filepath) as f:
             while True:
@@ -25,14 +25,12 @@ class TANS:
                 p[c] = p[c] + 1 if c in p else 1
         numPrecisionBits = math.ceil(math.log(len(p), 2)) + magicExtraBits
         self.maxVal = int(math.pow(2, numPrecisionBits)) - 1
-        self.charStat = dict(map(lambda kv: (kv[0], (kv[1] / self.count, math.ceil((kv[1] * self.maxVal) / self.count))), p.items()))
+        self.charStat = sorted(map(lambda kv:(kv[0], (kv[1][0], kv[1][1] if kv[1][1] > 0 else 1)), map(lambda kv: (kv[0], (kv[1]/self.count, math.floor((kv[1]*self.maxVal)/self.count))), p.items())), key=lambda kv: -kv[1][0])
+        self.lookup = list(map(lambda l:tuple(filter(lambda n:n>0, map(lambda x: -1 if x[1][1] < l else self.__resolveCollision(round(l/x[1][0])), self.charStat))), range(1, self.maxVal)))
         self.__info()
-        self.__createLookupTable()
         return
 
-    def __createLookupTable(self):
-        p = sorted(self.charStat.items(), key=lambda kv: -kv[1][0])
-        self.lookupTable = list(map(lambda l: tuple(filter(lambda n:n > 0, map(lambda x: -1 if x[1][1] < l else self.__resolveCollision(round(l/x[1][0])), p))), range(1, self.maxVal)))
+    def decode(data = '/tmp/tans.out'):
         return
 
     def __resolveCollision(self, n):
